@@ -929,8 +929,8 @@
       <!-- LEFT COLUMN: INSTAGRAM REELS -->
       <div class="reels-column">
         <div class="section-title">Latest Reels</div>
-        <div class="reels-grid">
-        </div>
+        <!-- FIX: Make sure id is spelled exactly like this (reelsGrid) -->
+        <div class="reels-grid" id="reelsGrid"></div>
       </div>
 
       <!-- RIGHT COLUMN: PRODUCTS LIST -->
@@ -1291,7 +1291,9 @@
         showToast('🎬 Reel added successfully!');
         document.getElementById('inputReelLink').value = '';
         document.getElementById('inputReelThumb').value = '';
-        loadDashboardData(); // Refresh display
+        window.addEventListener('DOMContentLoaded', () => {
+          loadDashboardData();
+        });
       } catch (e) {
         showToast('❌ Permission denied.');
       }
