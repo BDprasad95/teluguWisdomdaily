@@ -621,11 +621,53 @@
   }
 
   /* ── RESPONSIVE ── */
+  /* ── RESPONSIVE ── */
   @media (max-width: 480px) {
-    .header-title { font-size: 15px; }
-    .form-row { grid-template-columns: 1fr; }
-    .hero h1 { font-size: 22px; }
-    .modal { padding: 28px 22px; }
+    .header-title { font-size: 15px; } /* cite: 2 */
+    .form-row { grid-template-columns: 1fr; } /* cite: 2 */
+    .hero h1 { font-size: 22px; } /* cite: 2 */
+    .modal { padding: 28px 22px; } /* cite: 2 */
+
+    /* ── MOBILE PRODUCT CARD OPTIMIZATIONS ── */
+    .product-card {
+      flex-direction: column;   /* Stacks content vertically */
+      align-items: flex-start;  /* Aligns everything to the left */
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .product-info {
+      width: 100%;
+    }
+
+    .product-name {
+      white-space: normal;      /* Allows the title to wrap if it's long */
+      overflow: visible;
+      text-overflow: clip;
+      font-size: 16px;
+    }
+
+    .product-desc {
+      white-space: normal;      /* Fixes the mobile bug: allows description to wrap down */
+      overflow: visible;
+      text-overflow: clip;
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .btn-buy {
+      align-self: stretch;      /* Makes the button span the full width of the card */
+      text-align: center;       /* Centers the text inside the button */
+      margin-top: 4px;          /* Pushes it slightly down away from the price/text */
+    }
+
+    .admin-card-actions {
+      flex-direction: row;      /* Places Edit and Delete side-by-side instead of stacked */
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
   }
 </style>
 </head>
