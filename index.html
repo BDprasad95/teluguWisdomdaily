@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Telugu Wisdom Daily — Products</title>
-<link rel="icon" type="image/jpeg" href="WhatsApp Image 2026-04-20 at 7.36.29 PM.jpeg">
+<link rel="icon" type="image/jpeg" href="WhatsApp Image 2026-04-20 at 7.36.29 PM.jp">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -783,60 +783,70 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
-  // ── CONFIG ──
-  const ADMIN_PASSWORD = 'twd2024admin';
+
+<!-- Replace your existing <script> block completely with this -->
+<script type="module">
+  // ── FIREBASE IMPORTS ──
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ── YOUR FIREBASE CONFIGURATION ──
+  // Paste the configuration snippet you copied from Step 1 here:
+  const firebaseConfig = {
+    apiKey: "AIzaSyBumoQWJVdBq693295HmASZRcg-5MPpv5E",
+    authDomain: "telugu-wisdom-daily.firebaseapp.com",
+    projectId: "telugu-wisdom-daily ",
+    storageBucket: "telugu-wisdom-daily.firebasestorage.app",
+    messagingSenderId: "515175358495",
+    appId: "1:515175358495:web:d76cce70e858c59e06f52a"
+  };
+
+  // Initialize Firebase services
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
   // ── STATE ──
   let isAdmin = false;
   let products = [];
 
-  // ── LOAD saved products ──
-  function loadProducts() {
+  // ── OBSERVE AUTH STATECHANGES ──
+  // This securely checks if you are logged in, even if you refresh the page
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      isAdmin = true;
+      document.getElementById('btnAdminLogin').style.display = 'none';
+      document.getElementById('btnLogout').style.display = 'inline-block';
+      document.getElementById('adminPanel').style.display = 'block';
+    } else {
+      isAdmin = false;
+      document.getElementById('btnAdminLogin').style.display = 'inline-block';
+      document.getElementById('btnLogout').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+    renderProducts();
+  });
+
+  // ── LOAD PRODUCTS FROM FIRESTORE ──
+  async function loadProducts() {
     try {
-      const saved = localStorage.getItem('twd_products');
-      if (saved) products = JSON.parse(saved);
-      else products = getDefaultProducts();
-    } catch(e) {
-      products = getDefaultProducts();
+      // Fetches documents from your database sorted by when they were added
+      const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      products = [];
+      querySnapshot.forEach((doc) => {
+        products.push({ id: doc.id, ...doc.data() });
+      });
+      renderProducts();
+    } catch (e) {
+      console.error("Error loading products: ", e);
+      showToast("❌ Error loading products.");
     }
   }
 
-  function saveProducts() {
-    localStorage.setItem('twd_products', JSON.stringify(products));
-  }
-
-  function getDefaultProducts() {
-    return [
-      {
-        name: "Traditional Clay Pot",
-        emoji: "🏺",
-        desc: "Perfect for తులసి మొక్క — handcrafted clay pot",
-        price: "₹299",
-        btnLabel: "Buy on Amazon",
-        link: "https://www.amazon.in"
-      },
-      {
-        name: "Clay Diya Lamp Set",
-        emoji: "🪔",
-        desc: "Traditional clay diyas for pooja & decoration",
-        price: "₹199",
-        btnLabel: "Buy on Amazon",
-        link: "https://www.amazon.in"
-      },
-      {
-        name: "Telugu Proverbs Book",
-        emoji: "📚",
-        desc: "Complete collection of తెలుగు సామెతలు with meanings",
-        price: "₹349",
-        btnLabel: "Buy on Amazon",
-        link: "https://www.amazon.in"
-      }
-    ];
-  }
-
-  // ── RENDER PRODUCTS ──
-  function renderProducts() {
+  // ── RENDER PRODUCTS TO UI ──
+  window.renderProducts = function() {
     const grid = document.getElementById('productsGrid');
     if (products.length === 0) {
       grid.innerHTML = `
@@ -856,7 +866,7 @@
         </div>
         <a href="${p.link}" target="_blank" rel="noopener" class="btn-buy"
            onclick="trackClick('${p.name}')">${p.btnLabel || 'View Product'}</a>
-        <div class="admin-card-actions" id="adminActions${i}" ${isAdmin ? 'style="display:flex"' : ''}>
+        <div class="admin-card-actions" id="adminActions${i}" style="display: ${isAdmin ? 'flex' : 'none'}">
           <button class="btn-edit-card" onclick="openEditModal(${i})">✏️ Edit</button>
           <button class="btn-delete-card" onclick="deleteProduct(${i})">🗑️ Delete</button>
         </div>
@@ -864,77 +874,78 @@
     `).join('');
   }
 
-  // ── LOGIN ──
-  function openLoginModal() {
-    document.getElementById('loginModal').classList.add('active');
-    document.getElementById('inputPassword').value = '';
-    document.getElementById('loginError').style.display = 'none';
-    setTimeout(() => document.getElementById('inputPassword').focus(), 100);
-  }
-
-  function closeLoginModal() {
-    document.getElementById('loginModal').classList.remove('active');
-  }
-
-  function doLogin() {
+  // ── SECURE LOGIN ──
+  window.doLogin = async function() {
+    // Note: Since Firebase Auth uses Email, we treat the input fields accordingly.
+    // For your modal layout, you can prompt for your email, or hardcode your admin email here:
+    const email = "your_admin_email@example.com"; // Replace with your email created in Step 2
     const pwd = document.getElementById('inputPassword').value;
-    if (pwd === ADMIN_PASSWORD) {
-      isAdmin = true;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pwd);
       closeLoginModal();
-      document.getElementById('btnAdminLogin').style.display = 'none';
-      document.getElementById('btnLogout').style.display = 'inline-block';
-      document.getElementById('adminPanel').style.display = 'block';
-      renderProducts();
       showToast('✅ Admin mode activated!');
-    } else {
+      loadProducts();
+    } catch (error) {
+      console.error(error);
       document.getElementById('loginError').style.display = 'block';
       document.getElementById('inputPassword').value = '';
       document.getElementById('inputPassword').focus();
     }
   }
 
-  function logout() {
-    isAdmin = false;
-    document.getElementById('btnAdminLogin').style.display = 'inline-block';
-    document.getElementById('btnLogout').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'none';
-    renderProducts();
+  // ── LOGOUT ──
+  window.logout = async function() {
+    await signOut(auth);
     showToast('👋 Logged out successfully!');
+    loadProducts();
   }
 
-  // ── ADD PRODUCT ──
-  function addProduct() {
+  // ── ADD PRODUCT TO FIRESTORE ──
+  window.addProduct = async function() {
     const name = document.getElementById('inputName').value.trim();
     const link = document.getElementById('inputLink').value.trim();
     if (!name) { showToast('⚠️ Product name is required!'); return; }
     if (!link) { showToast('⚠️ Product link is required!'); return; }
-    products.unshift({
+
+    const newProduct = {
       name,
       emoji: document.getElementById('inputEmoji').value || '🛍️',
       desc: document.getElementById('inputDesc').value.trim(),
       price: document.getElementById('inputPrice').value.trim(),
       btnLabel: document.getElementById('inputBtnLabel').value.trim() || 'View Product',
-      link
-    });
-    saveProducts();
-    renderProducts();
-    // Clear form
-    ['inputName','inputEmoji','inputDesc','inputPrice','inputBtnLabel','inputLink']
-      .forEach(id => document.getElementById(id).value = '');
-    showToast('✅ Product added successfully!');
+      link,
+      createdAt: new Date().getTime()
+    };
+
+    try {
+      await addDoc(collection(db, "products"), newProduct);
+      showToast('✅ Product saved to cloud!');
+      // Clear form inputs
+      ['inputName','inputEmoji','inputDesc','inputPrice','inputBtnLabel','inputLink']
+        .forEach(id => document.getElementById(id).value = '');
+      loadProducts();
+    } catch (e) {
+      showToast('❌ Permission denied.');
+    }
   }
 
-  // ── DELETE PRODUCT ──
-  function deleteProduct(i) {
-    if (!confirm(`Delete "${products[i].name}"?`)) return;
-    products.splice(i, 1);
-    saveProducts();
-    renderProducts();
-    showToast('🗑️ Product deleted!');
+  // ── DELETE PRODUCT FROM FIRESTORE ──
+  window.deleteProduct = async function(i) {
+    const p = products[i];
+    if (!confirm(`Delete "${p.name}"?`)) return;
+
+    try {
+      await deleteDoc(doc(db, "products", p.id));
+      showToast('🗑️ Product deleted!');
+      loadProducts();
+    } catch(e) {
+      showToast('❌ Permission denied.');
+    }
   }
 
-  // ── EDIT PRODUCT ──
-  function openEditModal(i) {
+  // ── EDIT MODAL CONTROL ──
+  window.openEditModal = function(i) {
     const p = products[i];
     document.getElementById('editIndex').value = i;
     document.getElementById('editName').value = p.name;
@@ -946,13 +957,16 @@
     document.getElementById('editModal').classList.add('active');
   }
 
-  function closeEditModal() {
+  window.closeEditModal = function() {
     document.getElementById('editModal').classList.remove('active');
   }
 
-  function saveEdit() {
+  // ── SAVE EDIT TO FIRESTORE ──
+  window.saveEdit = async function() {
     const i = parseInt(document.getElementById('editIndex').value);
-    products[i] = {
+    const p = products[i];
+
+    const updatedData = {
       name: document.getElementById('editName').value.trim(),
       emoji: document.getElementById('editEmoji').value || '🛍️',
       desc: document.getElementById('editDesc').value.trim(),
@@ -960,28 +974,37 @@
       btnLabel: document.getElementById('editBtnLabel').value.trim() || 'View Product',
       link: document.getElementById('editLink').value.trim()
     };
-    saveProducts();
-    closeEditModal();
-    renderProducts();
-    showToast('✅ Product updated!');
+
+    try {
+      await updateDoc(doc(db, "products", p.id), updatedData);
+      closeEditModal();
+      showToast('✅ Product updated!');
+      loadProducts();
+    } catch(e) {
+      showToast('❌ Permission denied.');
+    }
   }
 
-  // ── TRACK CLICK ──
-  function trackClick(name) {
-    console.log('Product clicked:', name);
+  // UI Modal triggers (bound to window scope for HTML click compliance)
+  window.openLoginModal = function() {
+    document.getElementById('loginModal').classList.add('active');
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    setTimeout(() => document.getElementById('inputPassword').focus(), 100);
   }
-
-  // ── TOAST ──
-  function showToast(msg) {
+  window.closeLoginModal = function() {
+    document.getElementById('loginModal').classList.remove('active');
+  }
+  window.trackClick = function(name) { console.log('Product clicked:', name); }
+  window.showToast = function(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ── INIT ──
+  // Initial Data Fetch
   loadProducts();
-  renderProducts();
 </script>
 </body>
 </html>
